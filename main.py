@@ -1,3 +1,13 @@
+"""
+main.py
+24. May 2024
+
+A gaß particle simulator
+
+Author:
+Nilusink
+"""
+from contextlib import suppress
 from subprocess import Popen
 from threading import Thread
 from vectors import Vec2
@@ -105,7 +115,6 @@ class Particles(list):
     def remove_particle(self) -> None:
         """
         remove a single particle
-        :return:
         """
         if self:
             self.pop()
@@ -113,8 +122,6 @@ class Particles(list):
     def multiply_speeds(self, mult: float) -> None:
         """
         multiply all particle speeds
-        :param mult:
-        :return:
         """
         for particle in self:
             particle.velocity *= mult
@@ -250,8 +257,6 @@ class Communicator:
             except (TimeoutError, json.JSONDecodeError):
                 continue
 
-            print(data)
-
             # parse request
             answer: dict = {}
             for key in data:
@@ -273,7 +278,10 @@ class Communicator:
 
             # if anything has been requested, send answer
             if answer:
-                self._socket.sendto(json.dumps(answer).encode('utf-8'), addr)
+                # we don't care if there was an error sending, so just ignore
+                # all possible errors
+                with suppress(Exception):
+                    self._socket.sendto(json.dumps(answer).encode('utf-8'), addr)
 
 
 # global variables
@@ -284,7 +292,6 @@ def main() -> None:
     running = True
     clock = pygame.time.Clock()
     particles.change_particles(INITIAL_PARTICLE_COUNT)
-    speed_factor = 1
 
     comm = Communicator("127.0.0.1", 24323)
 
@@ -312,8 +319,8 @@ def main() -> None:
 
         screen.fill(WHITE)
         for i, particle in enumerate(particles):
-            particle.speed = PARTICLE_SPEED * speed_factor
             particle.move()
+
             for other in particles[i + 1:]:
                 particle.collide(other)
 
