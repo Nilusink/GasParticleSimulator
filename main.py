@@ -192,7 +192,7 @@ class Particle:
 
         if distance < self.radius + other.radius:
             # move other out of way
-            # other.position += Vec2.from_polar(delta.angle, (self.radius-distance) + 1)
+            other.position = self.position - Vec2.from_polar(delta.angle, self.radius+other.radius)
 
             # split the velocities in two directions (90°)
             a = delta.angle - self.velocity.angle
@@ -256,6 +256,12 @@ class Communicator:
 
             except (TimeoutError, json.JSONDecodeError):
                 continue
+
+            # send close if not running anymore
+            if not self.running:
+                self._socket.sendto(json.dumps({
+                    "close": 1
+                }).encode('utf-8'), addr)
 
             # parse request
             answer: dict = {}

@@ -22,7 +22,9 @@ class Window(ctk.CTk):
         # connection to pygame
         self._pg_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._pg_socket.connect(("127.0.0.1", 24323))
+        self._pg_socket.settimeout(1)
 
+        # setup GUI
         self._init_gui()
 
         self.protocol("WM_DELETE_WINDOW", self.close)
@@ -31,8 +33,11 @@ class Window(ctk.CTk):
         Thread(target=self.receive).start()
 
     def _init_gui(self) -> None:
+        """
+        repetitive tkinter stuff
+        """
         # gui settings
-        self.title("Settings")
+        self.title("Gas Particle Simulation Settings")
 
         self.grid_rowconfigure((0, 1, 3, 4), weight=1)
         self.grid_columnconfigure(1, weight=2)
@@ -114,19 +119,24 @@ class Window(ctk.CTk):
     def change_n_particles(self, number: int) -> None:
         self._pg_socket.send(json.dumps({"num": number}).encode("utf-8"))
 
-    def update_values(self) -> None:
+    def _update_values(self, interval: int) -> None:
         """
-        update velocity and number of particles
+        update velocity and number of particles (recursive)
         """
-        self._pg_socket.send(json.dumps({"rnum": 0, "rvel": 0}).encode("utf-8"))
-        self.after(1000, self.update_values)
+        # only execute if running
+        if not self.running:
+            return
+
+        # send update request
+        self._pg_socket.send(json.dumps({"rnum": 1, "rvel": 1}).encode("utf-8"))
+        self.after(interval, lambda: self._update_values(interval))
 
     def receive(self) -> None:
         """
         receive answers from the server
         """
         # start updating
-        self.after(1000, self.update_values)
+        self.after(500, lambda: self._update_values(500))
 
         while self.running:
             try:
@@ -135,6 +145,10 @@ class Window(ctk.CTk):
 
             except (TimeoutError, json.JSONDecodeError):
                 continue
+
+            except (ConnectionError, ConnectionResetError):
+                self.close()
+                return
 
             # parse request
             for key in data:
@@ -149,10 +163,17 @@ class Window(ctk.CTk):
                             text=str(data[key])
                         )
 
+                    case "close":
+                        self.close()
+                        return
+
                     case _:
                         print(f"INVALID KEY: \"{key}\"")
 
     def close(self) -> None:
+        """
+        close the window
+        """
         self.running = False
         self.destroy()
         exit(0)
