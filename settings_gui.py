@@ -17,6 +17,8 @@ class Window(ctk.CTk):
     running = True
 
     def __init__(self):
+        self._box_length = ...
+
         super().__init__()
 
         # connection to pygame
@@ -39,11 +41,11 @@ class Window(ctk.CTk):
         # gui settings
         self.title("Gas Particle Simulation Settings")
 
-        self.grid_rowconfigure((0, 1, 3, 4), weight=1)
+        self.grid_rowconfigure((0, 1, 3, 4, 5, 6), weight=1)
         self.grid_columnconfigure(1, weight=2)
         self.grid_columnconfigure((0, 2), weight=1)
 
-        # speeds
+        # heat
         ctk.CTkButton(
             self,
             text="-",
@@ -58,13 +60,9 @@ class Window(ctk.CTk):
         )
         ctk.CTkLabel(
             self,
-            text="Speed"
-        ).grid(row=0, column=1, sticky="nsew")
-        self._speed_label = ctk.CTkLabel(
-            self,
-            text="0"
-        )
-        self._speed_label.grid(row=1, column=1, sticky="nsew")
+            text="Heat"
+        ).grid(row=0, rowspan=2, column=1, sticky="nsew")
+
         ctk.CTkButton(
             self,
             text="+",
@@ -93,13 +91,14 @@ class Window(ctk.CTk):
         )
         ctk.CTkLabel(
             self,
-            text="Particles"
+            text="N Particles"
         ).grid(row=2, column=1, sticky="nsew")
         self._n_particles_label = ctk.CTkLabel(
             self,
             text="0"
         )
         self._n_particles_label.grid(row=3, column=1, sticky="nsew")
+
         ctk.CTkButton(
             self,
             text="+",
@@ -113,11 +112,72 @@ class Window(ctk.CTk):
             pady=10
         )
 
+        # length
+        ctk.CTkButton(
+            self,
+            text="-",
+            command=lambda: self.change_length(-50)
+        ).grid(
+            row=4,
+            rowspan=2,
+            column=0,
+            sticky="nsew",
+            padx=20,
+            pady=10
+        )
+        ctk.CTkLabel(
+            self,
+            text="Length"
+        ).grid(row=4, column=1, sticky="nsew")
+        self._length_label = ctk.CTkLabel(
+            self,
+            text="0"
+        )
+        self._length_label.grid(row=5, column=1, sticky="nsew")
+        ctk.CTkButton(
+            self,
+            text="+",
+            command=lambda: self.change_length(50)
+        ).grid(
+            row=4,
+            rowspan=2,
+            column=2,
+            sticky="nsew",
+            padx=20,
+            pady=10
+        )
+
+        # spacer
+        self.grid_rowconfigure(6, minsize=50)
+
+        # stats
+        ctk.CTkLabel(self, text="Pressure").grid(row=7, column=0)
+        ctk.CTkLabel(self, text="Temperature").grid(row=8, column=0)
+        self._pressure_label = ctk.CTkLabel(
+            self,
+            text="0"
+        )
+        self._temperature_label = ctk.CTkLabel(
+            self,
+            text="0"
+        )
+
+        self._pressure_label.grid(row=7, column=1)
+        self._temperature_label.grid(row=8, column=1)
+
     def change_speed(self, factor: float) -> None:
         self._pg_socket.send(json.dumps({"vel": factor}).encode("utf-8"))
 
     def change_n_particles(self, number: int) -> None:
         self._pg_socket.send(json.dumps({"num": number}).encode("utf-8"))
+
+    def change_length(self, number: int) -> None:
+        if self._box_length is ...:
+            return
+
+        self._pg_socket.send(
+            json.dumps({"len": self._box_length + number}).encode("utf-8")
+        )
 
     def _update_values(self, interval: int) -> None:
         """
@@ -128,7 +188,9 @@ class Window(ctk.CTk):
             return
 
         # send update request
-        self._pg_socket.send(json.dumps({"rnum": 1, "rvel": 1}).encode("utf-8"))
+        self._pg_socket.send(json.dumps(
+            {"rstats": 1, "rnum": 1}
+        ).encode("utf-8"))
         self.after(interval, lambda: self._update_values(interval))
 
     def receive(self) -> None:
@@ -153,15 +215,25 @@ class Window(ctk.CTk):
             # parse request
             for key in data:
                 match key:
-                    case "vel":
-                        self._speed_label.configure(
-                            text=str(round(data[key], 2))
-                        )
-
                     case "num":
                         self._n_particles_label.configure(
                             text=str(data[key])
                         )
+
+                    case "stats":
+                        values = data[key]
+
+                        self._pressure_label.configure(
+                            text=str(round(values["p"], 2))
+                        )
+                        self._temperature_label.configure(
+                            text=str(round(values["t"], 2))
+                        )
+                        self._length_label.configure(
+                            text=str(round(values["l"], 2))
+                        )
+
+                        self._box_length = values["l"]
 
                     case "close":
                         self.close()
