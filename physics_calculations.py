@@ -147,7 +147,7 @@ def pressure_from_particles(particles: list["Particle"], volume: float) -> float
 
 
 def volume_from_pressure(particles: list["Particle"], pressure: float) -> float:
-    """
+    r"""
     calculates the required volume of a space for a certain pressure and
     particle set
 

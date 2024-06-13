@@ -41,7 +41,7 @@ class Window(ctk.CTk):
         # gui settings
         self.title("Gas Particle Simulation Settings")
 
-        self.grid_rowconfigure((0, 1, 3, 4, 5, 6), weight=1)
+        self.grid_rowconfigure((0, 1, 2, 3, 4, 5, 6), weight=1)
         self.grid_columnconfigure(1, weight=2)
         self.grid_columnconfigure((0, 2), weight=1)
 
@@ -60,8 +60,13 @@ class Window(ctk.CTk):
         )
         ctk.CTkLabel(
             self,
-            text="Heat"
-        ).grid(row=0, rowspan=2, column=1, sticky="nsew")
+            text="Temperature"
+        ).grid(row=0, column=1, sticky="nsew")
+        self._temperature_label = ctk.CTkLabel(
+            self,
+            text="0"
+        )
+        self._temperature_label.grid(row=1, column=1, sticky="nsew")
 
         ctk.CTkButton(
             self,
@@ -91,7 +96,7 @@ class Window(ctk.CTk):
         )
         ctk.CTkLabel(
             self,
-            text="N Particles"
+            text="N molecules"
         ).grid(row=2, column=1, sticky="nsew")
         self._n_particles_label = ctk.CTkLabel(
             self,
@@ -152,18 +157,12 @@ class Window(ctk.CTk):
 
         # stats
         ctk.CTkLabel(self, text="Pressure").grid(row=7, column=0)
-        ctk.CTkLabel(self, text="Temperature").grid(row=8, column=0)
         self._pressure_label = ctk.CTkLabel(
-            self,
-            text="0"
-        )
-        self._temperature_label = ctk.CTkLabel(
             self,
             text="0"
         )
 
         self._pressure_label.grid(row=7, column=1)
-        self._temperature_label.grid(row=8, column=1)
 
     def change_speed(self, factor: float) -> None:
         self._pg_socket.send(json.dumps({"vel": factor}).encode("utf-8"))
@@ -224,10 +223,10 @@ class Window(ctk.CTk):
                         values = data[key]
 
                         self._pressure_label.configure(
-                            text=str(round(values["p"], 2))
+                            text=str(round(values["p"], 2)) + " P"
                         )
                         self._temperature_label.configure(
-                            text=str(round(values["t"], 2))
+                            text=str(round(values["t"], 2)) + " °K"
                         )
                         self._length_label.configure(
                             text=str(round(values["l"], 2))

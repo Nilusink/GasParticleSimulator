@@ -29,7 +29,14 @@ class _Box:
         return self._size.copy()
 
     def set_length(self, value: float) -> None:
-        if self._min_width <= value <= self._max_width:
+        # only resize if in bounds
+        if self._min_width > value:
+            self._size.x = self._min_width
+
+        elif value > self._max_width:
+            self._size.x = self._max_width
+
+        else:
             self._size.x = value
 
     @property
