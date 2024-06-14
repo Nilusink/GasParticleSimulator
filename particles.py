@@ -104,8 +104,8 @@ class Particles(list):
 # Particle class
 class Particle:
     def __init__(self, x, y, mass, radius, speed, angle, color):
-        self.position = Vec2.from_cartesian(x, y)
-        self.velocity = Vec2.from_polar(angle, speed)
+        self.position: Vec2 = Vec2.from_cartesian(x, y)
+        self.velocity: Vec2 = Vec2.from_polar(angle, speed)
         self.radius = radius
         self.color = color
         self.mass = mass
